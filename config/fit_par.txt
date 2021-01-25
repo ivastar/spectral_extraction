@@ -1,0 +1,39 @@
+#parameter	fixed		tied		value		lo_lim	lo_val	hi_lim	hi_val
+per		True		True		4.7365   	False	0.	False	0.
+t0		True            True		2458227.01455   True    2458227.0142      True    2458227.0148
+t_secondary	True		True		0.      	False	0.	False	0.
+w		True		True		90.		False	0.	False	0.
+a		True            True		5.00		False	2.9     False	3.3
+inc 		True		True		85.3		True	80.	True	90.
+rp		False           True            0.0503		True	0.04	True	0.2
+fp		True		True	        0.0		True	0.	False	0.
+u1		False           True		0.3		True	0.	True	1.0
+u2		True		True		0.		False	0.	False	0.
+ecc		True		True		0.		False	0.	False	0.
+limb_dark	True            True		2.0		False   -1.	False   1.
+c		False		True            1.e9		False	0.	False	0.
+v		False           True            -1.0e-3		False	0.	False	0.
+v2		True            True            1.e-3		False	0.	False	0.
+r1		True            True		257.0		True	100.	True	500.
+r2		True            True		7.00		True	4.      True	8.
+r3		True            True		0.0005		True	-1.	True	1.
+scale		False           True		0.0014		False	0.	False	0.
+amp1		True		True		1.0		False	0.9	False	1.1
+theta1		True 		True		-0.0276		True	-0.1	True	0.1
+amp2		True		True		0.		False	0.	False	0.
+theta2		True		True		0.		True	0.	True	3.1415926
+trap_pop_s	False           True		10.		True	0.	True	3.e3
+trap_pop_f	False           True		10.		True	0.	True	3.e3
+dTrap_s         False           True		10.0		True	0.	True    3.e2	
+dTrap_f         False           True		10.0     	True	0.	True    3.e2
+A1              True            True            1025.0          True    400.     True   1300.
+P1              True            True            1.0             False   0.      False   0.      
+phi1            True            True            1.0             False   0.      False   0.      
+A2              True            True            0.0             False   0.      False   0.      
+P2              True            True            1.0             False   0.      False   0.      
+phi2            True            True            1.0             False   0.      False   0.      
+
+
+
+
+
