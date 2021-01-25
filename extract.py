@@ -1,6 +1,7 @@
 import sys
 sys.path.insert(0, './util')
-import os, glob, pyfits, scipy, numpy
+import os, glob, scipy, numpy
+import astropy.io.fits as pyfits
 from numpy import *
 import scipy.signal
 import matplotlib.pyplot as plt
@@ -8,7 +9,7 @@ from pylab import *
 import numpy.ma as ma
 import geometry as geo
 import suntimecorr
-import optextr 
+import optextr
 import copy
 from scipy.optimize import leastsq
 from astropy.io import ascii
@@ -23,17 +24,17 @@ class AncillaryData:
     """
     def __init__(self, obs_par, fit_par, tstart, refpix):
         if not os.path.isfile("config/files.pic"):
-            files = []    
+            files = []
             print("using only ima files for visit 01")
             flist = glob.glob(os.path.join(obs_par['path'], "*01*ima.fits"))        #gets list of filenames in directory
-            for f in flist: 
+            for f in flist:
                 d = pyfits.open(f)
                 if d[0].header['filter'] == obs_par['GRISM']: files.append(f)
             #pickle.dump(files, open("config/files.pic", "wb"))
             self.files = files
         else: self.files = pickle.load(open("config/files.pic", "rb"))
 
-        f = pyfits.open(self.files[0])                
+        f = pyfits.open(self.files[0])
 
         self.flat = obs_par['flat']
         self.LTV1 = int(f[1].header['LTV1'])
@@ -42,15 +43,15 @@ class AncillaryData:
         self.POSTARG1 = int(f[0].header['POSTARG1'])
         self.POSTARG2 = int(f[0].header['POSTARG2'])
         self.platescale = 0.13
-        
+
         self.subarray_size = int(f[1].header['SIZAXIS1'])                #size of subarray
-        self.BEAMA_i = int(obs_par['BEAMA_i'])                    #start of first order trace 
-        self.BEAMA_f = int(obs_par['BEAMA_f'])                    #end of first order trace 
+        self.BEAMA_i = int(obs_par['BEAMA_i'])                    #start of first order trace
+        self.BEAMA_f = int(obs_par['BEAMA_f'])                    #end of first order trace
         self.npix = self.BEAMA_f - self.BEAMA_i                    #length of trace
         self.grism = obs_par['GRISM']
 
 
-        self.plot_trace = convert_to_bool(obs_par['plot_trace'])     
+        self.plot_trace = convert_to_bool(obs_par['plot_trace'])
         self.diagnostics = convert_to_bool(obs_par['diagnostics'])
         self.output = convert_to_bool(obs_par['output'])
         if self.output == False: print("NOTE: output is set to False!")
@@ -64,13 +65,13 @@ class AncillaryData:
         self.t0 = float(fit_par['t0'])
         self.period = float(fit_par['per'])
 
-        self.one_di_per_visit = convert_to_bool(obs_par['one_di_per_visit'])    
+        self.one_di_per_visit = convert_to_bool(obs_par['one_di_per_visit'])
         if self.one_di_per_visit==True: norb = nvisit
-        
-        self.ra = f[0].header['ra_targ']*math.pi/180.0                #stores right ascension    
-        self.dec = f[0].header['dec_targ']*math.pi/180.0            #stores declination    
-        
-        self.expstart = f[0].header['expstart']                    #exposure start time 
+
+        self.ra = f[0].header['ra_targ']*math.pi/180.0                #stores right ascension
+        self.dec = f[0].header['dec_targ']*math.pi/180.0            #stores declination
+
+        self.expstart = f[0].header['expstart']                    #exposure start time
         self.exptime = f[0].header['exptime']                    #exposure time [seconds]
 
         idx = np.argsort(refpix[:,0])
@@ -83,11 +84,11 @@ class AncillaryData:
 
         self.visnum = None
         self.orbnum = None
-        
+
         self.wavegrid = None
-    
+
         self.coordtable = []                            #table of spacecraft coordinates
-        for i in range(self.nvisit): self.coordtable.append("bjd_conversion/horizons_results_v"+str(i)+".txt")    
+        for i in range(self.nvisit): self.coordtable.append("bjd_conversion/horizons_results_v"+str(i)+".txt")
 
 
 def make_dict(table):
@@ -115,10 +116,10 @@ def interpolate_spectrum(spectrum, error, template, template_waves):
 
 def str_to_num(str):
     'Return value of numeric literal string or ValueError exception'
- 
+
     # Handle '0'
     if str == '0': return 0
- 
+
     # Int/Float/Complex
     try:
         return int(str)
@@ -155,7 +156,7 @@ def get_flatfield(ancil):                    #function that flatfields a data ar
     flat = pyfits.open(ancil.flat)                #reads in flatfield cube
     WMIN = flat[0].header['WMIN']                #constants for computing flatfield coefficients
     WMAX = flat[0].header['WMAX']
-    
+
     a0 = flat[0].data[-ancil.LTV1:-ancil.LTV1+ancil.subarray_size, -ancil.LTV2:-ancil.LTV2+ancil.subarray_size]
     a1 = flat[1].data[-ancil.LTV1:-ancil.LTV1+ancil.subarray_size, -ancil.LTV2:-ancil.LTV2+ancil.subarray_size]
     a2 = flat[2].data[-ancil.LTV1:-ancil.LTV1+ancil.subarray_size, -ancil.LTV2:-ancil.LTV2+ancil.subarray_size]
@@ -180,7 +181,7 @@ def get_orbnum(t, ancil):
     k = 0
     while(ancil.torbstart[k] < t):
         k = k + 1
-    k = k - 1                                                    
+    k = k - 1
     return k
 
 def plot_spectrum(spec_opt, ancil):
@@ -196,7 +197,7 @@ def plot_spectrum(spec_opt, ancil):
     plt.xlabel("Wavelength (microns)")
     plt.ylabel("Normalized flux")
     plt.ylim(0, 1.1)
-    
+
     plt.legend()
     plt.show()"""
 
@@ -221,9 +222,9 @@ def get_wave_grid(ancil):
     #calculates wavelength solution row by row for each orbit
     for i in range(ancil.norb*ancil.nvisit):
         for j in range(ancil.subarray_size):
-            disp_solution = geo.dispersion(ancil.refpix[i,1], -ancil.LTV2+j)    
-            delx = 0.5 + np.arange(ancil.subarray_size) - (ancil.refpix[i,2] + ancil.LTV1 + ancil.POSTARG1/ancil.platescale) 
-            wave_grid[i, j, :] = disp_solution[0] + delx*disp_solution[1]     
+            disp_solution = geo.dispersion(ancil.refpix[i,1], -ancil.LTV2+j)
+            delx = 0.5 + np.arange(ancil.subarray_size) - (ancil.refpix[i,2] + ancil.LTV1 + ancil.POSTARG1/ancil.platescale)
+            wave_grid[i, j, :] = disp_solution[0] + delx*disp_solution[1]
 
     return wave_grid
 
@@ -231,7 +232,7 @@ def get_wave_grid(ancil):
 ###############################################################################################################################################################
 
 
-#STEP 0: User-set parameters and constants 
+#STEP 0: User-set parameters and constants
 obs_par = make_dict(ascii.read("config/obs_par.txt", Reader=ascii.CommentedHeader))
 fit_par = make_dict(ascii.read("config/fit_par.txt", Reader=ascii.CommentedHeader))
 
@@ -267,22 +268,22 @@ for f in ancil.files:
     offset = int(obs_par['offset'])
     cmin = int(ancil.refpix[ancil.orbnum,2] + ancil.POSTARG1/ancil.platescale) + ancil.BEAMA_i + ancil.LTV1 + offset                      #determines left column for extraction (beginning of the trace)
     cmax = min(int(ancil.refpix[ancil.orbnum,2] + ancil.POSTARG1/ancil.platescale) + ancil.BEAMA_f + ancil.LTV1 - offset, ancil.subarray_size)     #right column (end of trace, or edge of detector)
-    
+
     rmin, rmax = int(obs_par['rmin']), int(obs_par['rmax'])                     #top and bottom row for extraction (specified in obs_par.txt)
 
     D = np.zeros_like(d[1].data[rmin:rmax,cmin:cmax])                        #array to store the background-subtracted data
     D_nointerp = np.zeros_like(d[1].data[rmin:rmax,cmin:cmax])                    #array to store the background-subtracted data w/o interpolating over different wavelengths in every row
-    outlier_array = np.zeros_like(d[1].data[rmin:rmax,cmin:cmax])                    #array used to determine which pixel is the biggest outlier    
+    outlier_array = np.zeros_like(d[1].data[rmin:rmax,cmin:cmax])                    #array used to determine which pixel is the biggest outlier
     M = np.ones_like(d[1].data[rmin:rmax, cmin:cmax])                        #mask for bad pixels
 
 
     bpix = d[3].data[rmin:rmax,cmin:cmax]
-    badpixind =  (bpix==4)|(bpix==512)|(flatfield[ancil.orbnum][rmin:rmax, cmin:cmax] == -1.)    #selects bad pixels 
-    M[badpixind] = 0.0                                        #initializes bad pixel mask    
+    badpixind =  (bpix==4)|(bpix==512)|(flatfield[ancil.orbnum][rmin:rmax, cmin:cmax] == -1.)    #selects bad pixels
+    M[badpixind] = 0.0                                        #initializes bad pixel mask
 
     spec_box = np.zeros(cmax - cmin)                                #box extracted standard spectrum
     spec_opt = np.zeros(cmax - cmin)                                #optimally extracted spectrum
-    var_box = np.zeros(cmax - cmin)                                #box spectrum variance    
+    var_box = np.zeros(cmax - cmin)                                #box spectrum variance
     var_opt = np.zeros(cmax - cmin)                                #optimal spectrum variance
 
     scan = 0                                            #sets scan direction
@@ -292,20 +293,20 @@ for f in ancil.files:
     # loops over up-the-ramp-samples (skipping first two very short exposures); gets all needed input for optextr routine                    #
     #########################################################################################################################################################
 
-    for ii in range(d[0].header['nsamp']-2):    
+    for ii in range(d[0].header['nsamp']-2):
     #for ii in range(1):
         print(ii)
         diff = d[ii*5 + 1].data[rmin:rmax,cmin:cmax] - d[ii*5 + 6].data[rmin:rmax,cmin:cmax]    #creates image that is the difference between successive scans
-        
-        #diff = d[1].data[rmin:rmax,cmin:cmax] 
+
+        #diff = d[1].data[rmin:rmax,cmin:cmax]
         diff = diff/flatfield[ancil.orbnum][rmin:rmax, cmin:cmax]                               #flatfields the differenced image
 
         idx = np.argmax(scipy.signal.medfilt(np.sum(diff, axis = 1),3))                         #computes spatial index of peak counts in the difference image
 
-        #estimates sky background and variance 
+        #estimates sky background and variance
         [skyrmin, skyrmax] = [6, 50]
         [skycmin, skycmax] = [450, 500]
-        
+
         fullframe_diff = d[ii*5 + 1].data - d[ii*5 + 6].data                                       #fullframe difference between successive scans
 
         skymedian = np.median(fullframe_diff[skyrmin:skyrmax,skycmin:skycmax])                    #estimates the background counts
@@ -315,40 +316,40 @@ for f in ancil.files:
 
         D_nointerp = D_nointerp+diff                                #sums up the diffs of the spectrum (with no interpolation for wavelength solution changing)
 
-        #interpolation to correct for bad pixels and the fact that the wavelength solution changes row by row 
+        #interpolation to correct for bad pixels and the fact that the wavelength solution changes row by row
         for jj in range(rmax):
             goodidx = M[jj,:] == 1.0                            #selects good pixels
             D[jj,:] += np.interp(ancil.wave_grid[0, int(ancil.refpix[0,1]) + ancil.LTV1, \
                 cmin:cmax], ancil.wave_grid[0, jj, cmin:cmax][goodidx], diff[jj,goodidx])    #LK interpolation 8/18
 
-        spectrum = diff[max(idx-ancil.window, 0):min(idx+ancil.window, rmax),:]        #selects postage stamp centered around spectrum 
+        spectrum = diff[max(idx-ancil.window, 0):min(idx+ancil.window, rmax),:]        #selects postage stamp centered around spectrum
 
         #stores median of column that has spectrum on it (+/- 5 pix from center) for ii = 0
         if ii == 0:
-            cRate = np.median(diff[max(idx-5, 0):min(idx+5, rmax),:], axis = 0)        #selects postage stamp centered around spectrum 
+            cRate = np.median(diff[max(idx-5, 0):min(idx+5, rmax),:], axis = 0)        #selects postage stamp centered around spectrum
             cRate /= ancil.exptime                                                     #calculates average counts over entire exposure
 
         err = np.zeros_like(spectrum) + float(obs_par['rdnoise'])**2 + skyvar
         var = abs(spectrum) + float(obs_par['rdnoise'])**2 +skyvar                #variance estimate: Poisson noise from photon counts (first term)  + readnoise (factor of 2 for differencing) + skyvar
-        spec_box_0 = spectrum.sum(axis = 0)                            #initial box-extracted spectrum 
+        spec_box_0 = spectrum.sum(axis = 0)                            #initial box-extracted spectrum
         var_box_0 = var.sum(axis = 0)                                #initial variance guess
-    
-        newM = np.ones_like(spectrum)                                #not masking any pixels because we interpolated over them 
 
-        if convert_to_bool(obs_par['opt_extract'])==True: [f_opt_0, var_opt_0, numoutliers] = optextr.optextr(spectrum, err, spec_box_0, var_box_0, newM, ancil.nsmooth, ancil.sig_cut, ancil.diagnostics)                            
+        newM = np.ones_like(spectrum)                                #not masking any pixels because we interpolated over them
+
+        if convert_to_bool(obs_par['opt_extract'])==True: [f_opt_0, var_opt_0, numoutliers] = optextr.optextr(spectrum, err, spec_box_0, var_box_0, newM, ancil.nsmooth, ancil.sig_cut, ancil.diagnostics)
         else: [f_opt, var_opt] = [spec_box_0,var_box_0]
 
         #sums up spectra and variance for all the differenced images
-        spec_opt += f_opt_0                            
+        spec_opt += f_opt_0
         var_opt += var_opt_0
         spec_box += spec_box_0
         var_box += var_box_0
-        
-    ######################################################################################################################################    
+
+    ######################################################################################################################################
 
     time = (d[0].header['expstart'] + d[0].header['expend'])/(2.0) + 2400000.5                    #converts time to BJD_TDB; see Eastman et al. 2010 equation 4
-    time = time + (32.184)/(24.0*60.0*60.0)                                    
-    time = time + (suntimecorr.suntimecorr(ancil.ra, ancil.dec, array([time]), ancil.coordtable[ancil.visnum], verbose=False))/(60.0*60.0*24.0)    
+    time = time + (32.184)/(24.0*60.0*60.0)
+    time = time + (suntimecorr.suntimecorr(ancil.ra, ancil.dec, array([time]), ancil.coordtable[ancil.visnum], verbose=False))/(60.0*60.0*24.0)
 
     phase = (time-ancil.t0)/ancil.period - math.floor((time-ancil.t0)/ancil.period)
     if phase > 0.5: phase = phase - 1.0                                    #calculates orbital phase
@@ -366,7 +367,7 @@ for f in ancil.files:
             #shifts spectrum so it matches the template
             [best_spec, best_var, shift] = interpolate_spectrum(spec_opt, np.sqrt(var_opt), template_spectrum, template_waves)
             best_var = best_var**2
-                
+
             spec_opt = best_spec                                    #saves the interpolated spectrum
             var_opt = best_var
 
@@ -377,11 +378,11 @@ for f in ancil.files:
     plt.plot(template_waves, cRate1)
     plt.plot(template_waves, cRate2)
     plt.show()"""
-    
+
     #plt.plot(template_waves, spec_opt)
     #plt.show()
 
-    n = len(spec_opt)    
+    n = len(spec_opt)
     print(phase[0], sum(spec_opt), sum(var_opt),  sum(spec_box), sum(var_box), time[0], ancil.visnum, ancil.orbnum, scan)
     if ancil.output == True:
         print(phase[0], sum(spec_opt), sum(var_opt),  sum(spec_box), sum(var_box), time[0], ancil.visnum, ancil.orbnum, scan, np.mean(cRate), file=whitefile)
@@ -405,4 +406,3 @@ if ancil.output == True:
     specfile.close()
     whitefile.close()
     diagnosticsfile.close()
-
